@@ -1,0 +1,103 @@
+import mysql.connector
+import pymysql
+import time
+
+# Database credentials
+HOST = "localhost"
+USER = "root"
+PASSWORD = "root"
+DATABASE = "performance_test"
+
+# Create a connection using mysql-connector-python
+def create_mysql_connector_connection():
+    return mysql.connector.connect(
+        host=HOST,
+        user=USER,
+        passwd=PASSWORD,
+        database=DATABASE
+    )
+
+# Create a connection using PyMySQL
+def create_pymysql_connection():
+    return pymysql.connect(
+        host=HOST,
+        user=USER,
+        password=PASSWORD,
+        database=DATABASE
+    )
+
+# Function to create a table
+def create_table(connection):
+    cursor = connection.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS performance_test (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255) NOT NULL
+        )
+    """)
+    connection.commit()
+    cursor.close()
+
+# Function to insert data
+def insert_data(connection, num_records):
+    cursor = connection.cursor()
+    for i in range(num_records):
+        cursor.execute("INSERT INTO performance_test (name) VALUES ('Name {}')".format(i))
+    connection.commit()
+    cursor.close()
+
+# Function to retrieve data
+def retrieve_data(connection):
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM performance_test")
+    rows = cursor.fetchall()
+    cursor.close()
+    return rows
+
+# Function to delete data
+def delete_data(connection):
+    cursor = connection.cursor()
+    cursor.execute("DELETE FROM performance_test")
+    connection.commit()
+    cursor.close()
+
+# Function to drop table
+def drop_table(connection):
+    cursor = connection.cursor()
+    cursor.execute("DROP TABLE IF EXISTS performance_test")
+    connection.commit()
+    cursor.close()
+
+# Timing function for operations
+def time_operation(operation, connection, *args):
+    start_time = time.time()
+    operation(connection, *args)
+    end_time = time.time()
+    return end_time - start_time
+
+# Main function to compare performance
+def main():
+    num_records = 1000  # Number of records to insert
+
+    # Using mysql-connector-python
+    print("Testing mysql-connector-python...")
+    mysql_conn = create_mysql_connector_connection()
+    drop_table(mysql_conn)
+    create_table(mysql_conn)
+    print("Insert Time:", time_operation(insert_data, mysql_conn, num_records))
+    print("Retrieve Time:", time_operation(retrieve_data, mysql_conn))
+    print("Delete Time:", time_operation(delete_data, mysql_conn))
+    mysql_conn.close()
+
+    # Using PyMySQL
+    print("Testing PyMySQL...")
+    pymysql_conn = create_pymysql_connection()
+    drop_table(pymysql_conn)
+    create_table(pymysql_conn)
+    print("Insert Time:", time_operation(insert_data, pymysql_conn, num_records))
+    print("Retrieve Time:", time_operation(retrieve_data, pymysql_conn))
+    print("Delete Time:", time_operation(delete_data, pymysql_conn))
+    pymysql_conn.close()
+
+if __name__ == "__main__":
+    main()
